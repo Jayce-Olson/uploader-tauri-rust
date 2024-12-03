@@ -9,6 +9,13 @@ use std::os::windows::ffi::OsStringExt;
 use winapi::um::fileapi::{GetDriveTypeW, GetLogicalDriveStringsW};
 use winapi::um::winbase::DRIVE_REMOVABLE;
 
+use windows::Win32::Foundation::{BOOL, HANDLE};
+use windows::Win32::Security::{
+    AdjustTokenPrivileges, LookupPrivilegeValueW, LUID_AND_ATTRIBUTES, SE_PRIVILEGE_ENABLED,
+    TOKEN_PRIVILEGES,
+};
+use windows::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
+
 /* I am still learning Rust so please excuse my excesive amount of comments */
 
 fn main() {
@@ -20,6 +27,11 @@ fn main() {
 
 #[tauri::command]
 fn copy_dir(src: String, dest: String) -> Result<(), String> {
+    if let Err(e) = elevate_privileges() {
+        println!("Failed to elevate privileges: {}", e);
+    } else {
+        println!("Privileges elevated successfully.");
+    }
     let src_path = PathBuf::from(src);
     let dest_path = PathBuf::from(dest);
 
@@ -32,16 +44,18 @@ fn copy_dir(src: String, dest: String) -> Result<(), String> {
 
 // Tauri commands do not allow std::io::Result return types so I needed to make this seperate
 fn copy_dir_recursive(src: &Path, dest: &Path) -> std::io::Result<()> {
+    println!("{}", src.display());
     if src.is_dir() {
         fs::create_dir_all(dest)?; // Create destination directory - if there is an error, the "?" will make this statement automatically return, with the error
         for entry in fs::read_dir(src)? {
             let entry = entry?;
+            println!("{}", entry.file_name().to_string_lossy());
             let entry_path = entry.path();
             let dest_path = dest.join(entry.file_name());
             if entry_path.is_dir() {
                 copy_dir_recursive(&entry_path, &dest_path)?; // Recursive call for directories
             } else {
-                fs::copy(&entry_path, &dest_path)?; // Copy individual files
+                let _ = fs::copy(&entry_path, &dest_path); // I do not return an error if this is bad, because I do not want files that are corrupt, or base windows files like IndexerVolumeGuid to end the process.
             }
         }
     } else {
@@ -85,4 +99,51 @@ fn list_devices() -> Vec<String> {
         .collect();
 
     drives
+}
+fn elevate_privileges() -> Result<(), String> {
+    unsafe {
+        let mut token_handle: HANDLE = HANDLE(0);
+
+        // Open the process token
+        let result: BOOL = OpenProcessToken(
+            GetCurrentProcess(),
+            windows::Win32::Security::TOKEN_ADJUST_PRIVILEGES,
+            &mut token_handle,
+        );
+
+        if !result.as_bool() {
+            return Err("Failed to open process token.".to_string());
+        }
+
+        let mut privileges = TOKEN_PRIVILEGES {
+            PrivilegeCount: 1,
+            Privileges: [LUID_AND_ATTRIBUTES {
+                Luid: Default::default(),
+                Attributes: SE_PRIVILEGE_ENABLED,
+            }],
+        };
+
+        // Use the wide-character version of LookupPrivilegeValue
+        let luid_result = LookupPrivilegeValueW(
+            None,                             // Local system
+            windows::w!("SeBackupPrivilege"), // Wide string literal
+            &mut privileges.Privileges[0].Luid,
+        );
+
+        if !luid_result.as_bool() {
+            return Err("Failed to lookup privilege value for SeBackupPrivilege.".to_string());
+        }
+
+        privileges.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+        // Adjust the token privileges
+        let adjust_result =
+            AdjustTokenPrivileges(token_handle, false, Some(&privileges), 0, None, None);
+
+        if !adjust_result.as_bool() {
+            return Err("Failed to adjust token privileges.".to_string());
+        }
+
+        Ok(())
+    }
 }

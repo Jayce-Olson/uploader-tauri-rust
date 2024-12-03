@@ -16,9 +16,11 @@ tauri-build = { version = "1.5.5", features = [] }
 
 [dependencies]
 serde_json = "1.0"
+windows = { version = "0.48", features = ["Win32_Foundation", "Win32_Security", "Win32_System_Threading", "Win32_Storage_FileSystem"] }
 serde = { version = "1.0", features = ["derive"] }
 tauri = { version = "1.8.1", features = ["api-all"] }
 winapi = { version = "0.3", features = ["fileapi", "winbase"] }
+
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.
