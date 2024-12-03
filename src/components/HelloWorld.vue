@@ -39,11 +39,14 @@ export default {
         return;
       }
 
-      const dest = "C:/Users/Jayce Olson/Desktop/"; // Adjust destination as needed
+      const dest = "C:/Users/Jayce Olson/Desktop/uploader_test"; // Adjust destination as needed
       try {
         progress.value = 0; // Start progress
         // I need to setup a listener for this, the name of the emitter on the backend for this is "file-progress"
-        await invoke("move_files", { src: selectedDevice.value, dest });
+        await invoke("copy_dir", {
+          src: selectedDevice.value,
+          dest,
+        });
         progress.value = 100; // Complete
         alert("Files uploaded successfully!");
       } catch (error) {
