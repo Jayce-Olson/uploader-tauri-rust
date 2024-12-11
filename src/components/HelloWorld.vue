@@ -3,7 +3,7 @@
     <h1>Select SD Card</h1>
     <select v-model="selectedDevice">
       <option v-for="device in devices" :key="device" :value="device">
-        {{ device }}
+        {{ device[0] + device[1] }}
       </option>
     </select>
 
@@ -41,13 +41,10 @@ export default {
 
       const dest = "C:/Users/Jayce Olson/Desktop/uploader_test"; // Adjust destination as needed
       try {
-        progress.value = 0; // Start progress
-        // I need to setup a listener for this, the name of the emitter on the backend for this is "file-progress"
         await invoke("copy_dir", {
-          src: selectedDevice.value,
+          src: selectedDevice.value[0],
           dest,
         });
-        progress.value = 100; // Complete
         alert("Files uploaded successfully!");
       } catch (error) {
         console.error("Failed to upload files:", error);
