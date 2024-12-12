@@ -35,18 +35,8 @@ pub fn list_devices() -> Vec<(String, String)> {
     }
 
     // Below looks like a tumor but it is just splitting the buffer into individual strings, filtering out empty strings, converting the slices to stirngs,
-    // filters out drives that are not removable (removable drives), and then finally collects them to the drives vector.
-    // let drives: Vec<String> = buffer
-    //     .split(|&c| c == 0)
-    //     .filter(|s| !s.is_empty())
-    //     .map(|s| OsString::from_wide(s).to_string_lossy().to_string())
-    //     .filter(|drive| {
-    //         let drive_type =
-    //             unsafe { GetDriveTypeW(drive.encode_utf16().collect::<Vec<u16>>().as_ptr()) };
-    //         drive_type == DRIVE_REMOVABLE
-    //     })
-    //     .collect();
-    // println!("{}", drives.join("\n") + "\n");
+    // filters out drives that are not removable (removable drives), then uses another tumor to map over the current drives and retrieves the names for the drives,
+    // and then finally collects a tuple of (drive, drive_name) to the drives vector.
 
     let drives_with_names: Vec<(String, String)> = buffer
         .split(|&c| c == 0)
