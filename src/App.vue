@@ -1,14 +1,14 @@
 <template>
-  <HelloWorld msg="Welcome to Your Vue.js App" />
+  <IndexComponent />
 </template>
 
 <script>
-import HelloWorld from "./components/HelloWorld.vue";
+import IndexComponent from "./components/IndexComponent.vue";
 
 export default {
   name: "App",
   components: {
-    HelloWorld,
+    IndexComponent,
   },
 };
 </script>

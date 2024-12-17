@@ -59,4 +59,4 @@ export default {
 };
 </script>
 
-<style src="./HelloWorld.css"></style>
+<style src="./styles.css"></style>
